@@ -35,6 +35,7 @@
 				Fix FI translation.
 		1.0.7 - Upgrade to utf8mb4
 		1.0.8 - No need to lock/unlock database - All queries are asynchronous.
+		1.0.9 - Simplify connect db logic - Use async connect.
 */
 #pragma semicolon 1
 #pragma newdecls required
