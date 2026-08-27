@@ -35,6 +35,7 @@
 				Fix FI translation.
 		1.0.7 - Upgrade to utf8mb4
 		1.0.8 - No need to lock/unlock database - All queries are asynchronous.
+		1.0.9 - Simplify connect db logic - Use async connect.
 */
 #pragma semicolon 1
 #pragma newdecls required
@@ -50,7 +51,7 @@ public Plugin myinfo =
 	name = "[VIP] Test",
 	author = "Loneypro",
 	description = "Players can test vip features for a set of time",
-	version = "1.0.8",
+	version = "1.0.9",
 	url = ""
 };
 
@@ -102,41 +103,24 @@ public void OnTestGroupChange(ConVar hCvar, const char[] oldVal, const char[] ne
 
 stock void Connect_DB()
 {
-	if (SQL_CheckConfig("vip_test"))
-	{
-		SQL_TConnect(DB_OnConnect, "vip_test", 1);
-	}
-	else
-	{
-		char sError[256];
-		sError[0] = '\0';
-		g_hDatabase = SQLite_UseDatabase("vip_test", sError, sizeof(sError));
-		DB_OnConnect(g_hDatabase, g_hDatabase, sError, 2);
-	}
+	// Database.Connect() implicitly falls back to a local SQLite database
+	// named "vip_test" when no matching entry exists in databases.cfg, so
+	// this single async call covers both the MySQL and SQLite cases.
+	Database.Connect(DB_OnConnect, "vip_test");
 }
 
-stock void DB_OnConnect(Handle owner, Handle hndl, const char[] sError, any data)
+public void DB_OnConnect(Database db, const char[] sError, any data)
 {
-	g_hDatabase = hndl;
-	
-	if (g_hDatabase == INVALID_HANDLE || sError[0])
+	g_hDatabase = db;
+
+	if (g_hDatabase == null || sError[0])
 	{
 		SetFailState("DB Connect %s", sError);
 		return;
 	}
 
 	char sDriver[16];
-	switch (data)
-	{
-		case 1 :
-		{
-			SQL_GetDriverIdent(owner, sDriver, sizeof(sDriver));
-		}
-		default :
-		{
-			SQL_ReadDriver(owner, sDriver, sizeof(sDriver));
-		}
-	}
+	db.Driver.GetIdentifier(sDriver, sizeof(sDriver));
 
 	g_bDBMySQL = (strcmp(sDriver, "mysql", false) == 0);
 
