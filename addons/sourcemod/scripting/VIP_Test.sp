@@ -50,7 +50,7 @@ public Plugin myinfo =
 	name = "[VIP] Test",
 	author = "Loneypro",
 	description = "Players can test vip features for a set of time",
-	version = "1.0.8",
+	version = "1.0.9",
 	url = ""
 };
 
@@ -102,17 +102,10 @@ public void OnTestGroupChange(ConVar hCvar, const char[] oldVal, const char[] ne
 
 stock void Connect_DB()
 {
-	if (SQL_CheckConfig("vip_test"))
-	{
-		SQL_TConnect(DB_OnConnect, "vip_test", 1);
-	}
-	else
-	{
-		char sError[256];
-		sError[0] = '\0';
-		g_hDatabase = SQLite_UseDatabase("vip_test", sError, sizeof(sError));
-		DB_OnConnect(g_hDatabase, g_hDatabase, sError, 2);
-	}
+	// SQL_TConnect() implicitly falls back to a local SQLite database named
+	// "vip_test" when no matching entry exists in databases.cfg, so this
+	// single async call covers both the MySQL and SQLite cases.
+	SQL_TConnect(DB_OnConnect, "vip_test", 1);
 }
 
 stock void DB_OnConnect(Handle owner, Handle hndl, const char[] sError, any data)
