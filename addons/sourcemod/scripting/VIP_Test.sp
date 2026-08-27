@@ -102,34 +102,24 @@ public void OnTestGroupChange(ConVar hCvar, const char[] oldVal, const char[] ne
 
 stock void Connect_DB()
 {
-	// SQL_TConnect() implicitly falls back to a local SQLite database named
-	// "vip_test" when no matching entry exists in databases.cfg, so this
-	// single async call covers both the MySQL and SQLite cases.
-	SQL_TConnect(DB_OnConnect, "vip_test", 1);
+	// Database.Connect() implicitly falls back to a local SQLite database
+	// named "vip_test" when no matching entry exists in databases.cfg, so
+	// this single async call covers both the MySQL and SQLite cases.
+	Database.Connect(DB_OnConnect, "vip_test");
 }
 
-stock void DB_OnConnect(Handle owner, Handle hndl, const char[] sError, any data)
+public void DB_OnConnect(Database db, const char[] sError, any data)
 {
-	g_hDatabase = hndl;
-	
-	if (g_hDatabase == INVALID_HANDLE || sError[0])
+	g_hDatabase = db;
+
+	if (g_hDatabase == null || sError[0])
 	{
 		SetFailState("DB Connect %s", sError);
 		return;
 	}
 
 	char sDriver[16];
-	switch (data)
-	{
-		case 1 :
-		{
-			SQL_GetDriverIdent(owner, sDriver, sizeof(sDriver));
-		}
-		default :
-		{
-			SQL_ReadDriver(owner, sDriver, sizeof(sDriver));
-		}
-	}
+	db.Driver.GetIdentifier(sDriver, sizeof(sDriver));
 
 	g_bDBMySQL = (strcmp(sDriver, "mysql", false) == 0);
 
